@@ -347,11 +347,23 @@ bool BST<K, V>::isValidBSTHelper(shared_ptr<BSTNode> node, const K *minVal, cons
         }
     }
 }
-/////////////////////////////////////////////////////////////////////////////
+
 template <typename K, typename V>
 void BST<K, V>::updateHeight(shared_ptr<BSTNode> node)
 {
-    node->height = this->getHeight(node);
+    if(node == nullptr){
+        return;
+    }
+    int right = this->getHeight(node->right);
+    int left = this->getHeight(node->left);
+    if(right > left)
+    {
+        node->height = right + 1;
+    }
+    else 
+    {
+        node->height = left + 1;
+    }
 }
 
 template <typename K, typename V>
@@ -361,15 +373,9 @@ int BST<K, V>::getHeight(shared_ptr<BSTNode> node) const
     {
         return 0;
     }
-    int left = this->getHeight(node->left);
-    int right = this->getHeight(node->right);
-    if(left > right)
-    {
-        return left + 1;
-    }
     else
     {
-        return right + 1;
+        return node->height;
     }
 }
 
