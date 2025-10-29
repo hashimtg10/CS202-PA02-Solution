@@ -28,13 +28,7 @@ bool CategoryNode::removeChild(const string &childName)
     {
         if (this->children[i]->categoryName == childName)
         {
-            for (int j = i; j < this->children.size() - 1; j++)
-            {
-                shared_ptr<CategoryNode> temp = this->children[j];
-                this->children[j] = this->children[j + 1];
-                temp->parent.reset();
-            }
-            this->children.pop_back();
+            this->children.erase(this->children.begin() + i);
             return true;
         }
     }
