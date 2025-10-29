@@ -73,10 +73,23 @@ bool CategoryNode::removePost(Post *post)
 {
     for (int i = 0; i < this->posts.size(); i++)
     {
-        if(this->posts[i]->postID == post->postID)
+        if (this->posts[i]->postID == post->postID)
         {
             this->posts.erase(this->posts.begin() + i);
+            this->totalPostCount--;
             return true;
+            if (this->parent.lock())
+            {
+                shared_ptr<CategoryNode> temp = this->parent.lock();
+                while (temp)
+                {
+                    temp->updatePostCounts();
+                    if (temp->parent.lock())
+                    {
+                        temp = temp->parent.lock();
+                    }
+                }
+            }
         }
     }
     return false;
