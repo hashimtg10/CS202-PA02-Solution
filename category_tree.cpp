@@ -21,10 +21,17 @@ void CategoryNode::addChild(shared_ptr<CategoryNode> child) {
 }
 
 bool CategoryNode::removeChild(const string& childName) {
-    return false;
+    
 }
 
 shared_ptr<CategoryNode> CategoryNode::findChild(const string& childName) const {
+    for(auto child : children)
+    {
+        if(child->categoryName == childName)
+        {
+            return child;
+        }
+    }
     return nullptr;
 }
 
