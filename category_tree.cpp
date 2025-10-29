@@ -24,10 +24,11 @@ void CategoryNode::addChild(shared_ptr<CategoryNode> child)
 
 bool CategoryNode::removeChild(const string &childName)
 {
-    for (int i = 0; i < this->children.size(); i++)
+    for (size_t i = 0; i < this->children.size(); i++)
     {
         if (this->children[i]->categoryName == childName)
         {
+            this->children[i].reset();
             this->children.erase(this->children.begin() + i);
             return true;
         }
@@ -71,7 +72,7 @@ void CategoryNode::addPost(Post *post)
 
 bool CategoryNode::removePost(Post *post)
 {
-    for (int i = 0; i < this->posts.size(); i++)
+    for (size_t i = 0; i < this->posts.size(); i++)
     {
         if (this->posts[i]->postID == post->postID)
         {
@@ -113,12 +114,66 @@ CategoryTree::CategoryTree()
 
 bool CategoryTree::addCategory(const string &categoryPath)
 {
-    return false;
+    vector<string> categories = this->parseCategoryPath(categoryPath);
+    if (categories.empty())
+    {
+        return false;
+    }
+    vector<string> added_categories;
+    size_t created = 0;
+    shared_ptr<CategoryNode> temp = this->root;
+    for (auto categ : categories)
+    {
+        if (temp->findChild(categ))
+        {
+            temp = temp->findChild(categ);
+        }
+        else
+        {
+            temp->addChild(make_shared<CategoryNode>(categ));
+            temp = temp->findChild(categ);
+            created++;
+        }
+    }
+    if (created == categories.size())
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 bool CategoryTree::removeCategory(const string &categoryPath)
 {
-    return false;
+    vector<string> categories = this->parseCategoryPath(categoryPath);
+    if (categories.empty())
+    {
+        return false;
+    }
+    bool removed = false;
+    shared_ptr<CategoryNode> temp = this->root;
+    for (auto categ : categories)
+    {
+        if (temp->findChild(categ))
+        {
+            if (categ == categories.back())
+            {
+                temp->removeChild(categ);
+                removed = true;
+            }
+            else
+            {
+                temp = temp->findChild(categ);
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+    return removed;
 }
 
 bool CategoryTree::moveCategory(const string &fromPath, const string &toPath)
