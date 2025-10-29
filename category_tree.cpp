@@ -12,6 +12,12 @@ CategoryNode::CategoryNode(const string& name)
 }
 
 void CategoryNode::addChild(shared_ptr<CategoryNode> child) {
+    if(!child)
+    {
+        return;
+    }
+    child->parent = shared_from_this();
+    children.push_back(child);
 }
 
 bool CategoryNode::removeChild(const string& childName) {
