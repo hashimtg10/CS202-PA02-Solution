@@ -102,7 +102,8 @@ void CategoryNode::updatePostCounts()
     {
         tot += child->totalPostCount;
     }
-    this->totalPostCount += tot;
+    tot += this->posts.size();
+    this->totalPostCount = tot;
 }
 
 CategoryTree::CategoryTree()
