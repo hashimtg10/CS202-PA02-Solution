@@ -21,7 +21,21 @@ void CategoryNode::addChild(shared_ptr<CategoryNode> child) {
 }
 
 bool CategoryNode::removeChild(const string& childName) {
-    
+    for(int i = 0; i < this->children.size(); i++)
+    {
+        if(this->children[i]->categoryName == childName)
+        {
+            for (int j = i; j < this->children.size() - 1; j++)
+            {
+                shared_ptr<CategoryNode> temp = this->children[j];
+                this->children[j] = this->children[j+1];
+                temp->parent.reset();
+            }
+            this->children.pop_back();
+            return true;
+        }
+    }
+    return false;
 }
 
 shared_ptr<CategoryNode> CategoryNode::findChild(const string& childName) const {
