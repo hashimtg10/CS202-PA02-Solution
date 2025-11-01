@@ -28,8 +28,13 @@ bool CategoryNode::removeChild(const string &childName)
     {
         if (this->children[i]->categoryName == childName)
         {
-            this->children[i].reset();
+            weak_ptr<CategoryNode> temp = this->children[i]->parent.lock();
             this->children.erase(this->children.begin() + i);
+            while (temp.lock())
+            {
+                temp.lock()->updatePostCounts();
+                temp = temp.lock()->parent;
+            }
             return true;
         }
     }
@@ -38,11 +43,11 @@ bool CategoryNode::removeChild(const string &childName)
 
 shared_ptr<CategoryNode> CategoryNode::findChild(const string &childName) const
 {
-    for (auto child : children)
+    for (size_t i = 0; i < this->children.size(); i++)
     {
-        if (child->categoryName == childName)
+        if (this->children[i]->categoryName == childName)
         {
-            return child;
+            return this->children[i];
         }
     }
     return nullptr;
@@ -58,14 +63,11 @@ void CategoryNode::addPost(Post *post)
     this->totalPostCount++;
     if (this->parent.lock())
     {
-        shared_ptr<CategoryNode> temp = this->parent.lock();
-        while (temp)
+        weak_ptr<CategoryNode> temp = this->parent.lock();
+        while (temp.lock())
         {
-            temp->updatePostCounts();
-            if (temp->parent.lock())
-            {
-                temp = temp->parent.lock();
-            }
+            temp.lock()->updatePostCounts();
+            temp = temp.lock()->parent.lock();
         }
     }
 }
@@ -78,19 +80,16 @@ bool CategoryNode::removePost(Post *post)
         {
             this->posts.erase(this->posts.begin() + i);
             this->totalPostCount--;
-            return true;
             if (this->parent.lock())
             {
                 shared_ptr<CategoryNode> temp = this->parent.lock();
                 while (temp)
                 {
                     temp->updatePostCounts();
-                    if (temp->parent.lock())
-                    {
-                        temp = temp->parent.lock();
-                    }
+                    temp = temp->parent.lock();
                 }
             }
+            return true;
         }
     }
     return false;
@@ -161,7 +160,7 @@ bool CategoryTree::removeCategory(const string &categoryPath)
             if (categ == categories.back())
             {
                 temp->removeChild(categ);
-                removed = true;
+                return true;
             }
             else
             {
@@ -173,26 +172,122 @@ bool CategoryTree::removeCategory(const string &categoryPath)
             break;
         }
     }
-    return removed;
+    return false;
 }
 
 bool CategoryTree::moveCategory(const string &fromPath, const string &toPath)
 {
-    return false;
+    vector<string> from_categories = this->parseCategoryPath(fromPath);
+    vector<string> to_categories = this->parseCategoryPath(toPath);
+    if (from_categories.size() <= 0 || to_categories.size() <= 0)
+    {
+        return false;
+    }
+    shared_ptr<CategoryNode> from = this->findCategory(fromPath);
+    if (from)
+    {
+        shared_ptr<CategoryNode> to = this->findCategory(toPath);
+        if (!to)
+        {
+            this->addCategory(toPath);
+            to = this->findCategory(toPath);
+        }
+
+        weak_ptr<CategoryNode> updater = from->parent.lock();
+
+        if (this->removeCategory(fromPath))
+        {
+            to->children.push_back(from);
+            to->updatePostCounts();
+            from->parent = to;
+            while (updater.lock())
+            {
+                updater.lock()->updatePostCounts();
+                updater = updater.lock()->parent;
+            }
+            updater = to->parent.lock();
+            while (updater.lock())
+            {
+                updater.lock()->updatePostCounts();
+                updater = updater.lock()->parent;
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return false;
+    }
 }
 
 shared_ptr<CategoryNode> CategoryTree::findCategory(const string &categoryPath) const
 {
-    return nullptr;
+    vector<string> categories = this->parseCategoryPath(categoryPath);
+    if (categories.empty())
+    {
+        return nullptr;
+    }
+    shared_ptr<CategoryNode> temp = this->root;
+    for (auto categ : categories)
+    {
+        if (temp->findChild(categ))
+        {
+            temp = temp->findChild(categ);
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+    return temp;
 }
 
 void CategoryTree::addPost(Post *post)
 {
+    if (!post)
+    {
+        return;
+    }
+    else
+    {
+        string category = post->category;
+        shared_ptr<CategoryNode> categ = this->findCategory(category);
+        if (categ)
+        {
+            categ->addPost(post);
+        }
+        else
+        {
+            this->addCategory(category);
+            categ = this->findCategory(category);
+            if (categ)
+            {
+                categ->addPost(post);
+            }
+        }
+    }
 }
 
 bool CategoryTree::removePost(Post *post)
 {
-    return false;
+    if (!post)
+    {
+        return false;
+    }
+    else
+    {
+        string category = post->category;
+        shared_ptr<CategoryNode> categ = this->findCategory(category);
+        if (categ)
+        {
+            return categ->removePost(post);
+        }
+        return false;
+    }
 }
 
 vector<Post *> CategoryTree::getPostsInCategory(const string &categoryPath, bool includeSubcategories) const
