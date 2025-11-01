@@ -151,7 +151,6 @@ bool CategoryTree::removeCategory(const string &categoryPath)
     {
         return false;
     }
-    bool removed = false;
     shared_ptr<CategoryNode> temp = this->root;
     for (auto categ : categories)
     {
@@ -292,8 +291,68 @@ bool CategoryTree::removePost(Post *post)
 
 vector<Post *> CategoryTree::getPostsInCategory(const string &categoryPath, bool includeSubcategories) const
 {
-    vector<Post *> p;
-    return p;
+    // Upon forgetting the code for level order traversal given lack of revision due to mid week, I took help from geeks from geeks in recalling the algorithm
+    // Only the macro algorithm for the level order traversal was seen though. Everything else was done by my self.
+    vector<string> categories = this->parseCategoryPath(categoryPath);
+    if(categories.empty())
+    {
+        return {};
+    }
+    else
+    {
+        shared_ptr<CategoryNode> temp = this->findCategory(categoryPath);
+        if(!temp)
+        {
+            return {};
+        }
+        vector<Post*> posts;
+        if(!temp)
+        {
+            return {};
+        }
+        if(includeSubcategories)
+        {
+            queue<shared_ptr<CategoryNode>> q;
+            q.push(temp);
+            vector<vector<Post*>> postings;
+
+            while(!q.empty())
+            {
+                size_t len = q.size();
+                for(size_t i = 0; i < len ; i++)
+                {
+                    shared_ptr<CategoryNode> temp = q.front();
+                    q.pop();
+
+                    postings.push_back(temp->posts);
+                    if(!temp->children.empty())
+                    {
+                        for (size_t i = 0; i < temp->children.size(); i++)
+                        {
+                            q.push(temp->children[i]);
+                        }
+                    }
+                }
+            }
+            for(size_t i = 0; i < postings.size(); i++)
+            {
+                for (size_t j = 0; j < postings[i].size(); j++)
+                {
+                    posts.push_back(postings[i][j]);
+                }
+                
+            }
+        }
+        else
+        {
+            for(size_t i = 0; i < temp->posts.size(); i++)
+            {
+                posts.push_back(temp->posts[i]);
+            }
+        }
+        return posts;
+    }
+
 }
 
 void CategoryTree::displayTree() const
