@@ -2,6 +2,7 @@
 #include "../headers/post.h"
 #include <iostream>
 #include <queue>
+#include <stack>
 #include <algorithm>
 #include <climits>
 #include <functional>
@@ -294,38 +295,38 @@ vector<Post *> CategoryTree::getPostsInCategory(const string &categoryPath, bool
     // Upon forgetting the code for level order traversal given lack of revision due to mid week, I took help from geeks from geeks in recalling the algorithm
     // Only the macro algorithm for the level order traversal was seen though. Everything else was done by my self.
     vector<string> categories = this->parseCategoryPath(categoryPath);
-    if(categories.empty())
+    if (categories.empty())
     {
         return {};
     }
     else
     {
         shared_ptr<CategoryNode> temp = this->findCategory(categoryPath);
-        if(!temp)
+        if (!temp)
         {
             return {};
         }
-        vector<Post*> posts;
-        if(!temp)
+        vector<Post *> posts;
+        if (!temp)
         {
             return {};
         }
-        if(includeSubcategories)
+        if (includeSubcategories)
         {
             queue<shared_ptr<CategoryNode>> q;
             q.push(temp);
-            vector<vector<Post*>> postings;
+            vector<vector<Post *>> postings;
 
-            while(!q.empty())
+            while (!q.empty())
             {
                 size_t len = q.size();
-                for(size_t i = 0; i < len ; i++)
+                for (size_t i = 0; i < len; i++)
                 {
                     shared_ptr<CategoryNode> temp = q.front();
                     q.pop();
 
                     postings.push_back(temp->posts);
-                    if(!temp->children.empty())
+                    if (!temp->children.empty())
                     {
                         for (size_t i = 0; i < temp->children.size(); i++)
                         {
@@ -334,33 +335,58 @@ vector<Post *> CategoryTree::getPostsInCategory(const string &categoryPath, bool
                     }
                 }
             }
-            for(size_t i = 0; i < postings.size(); i++)
+            for (size_t i = 0; i < postings.size(); i++)
             {
                 for (size_t j = 0; j < postings[i].size(); j++)
                 {
                     posts.push_back(postings[i][j]);
                 }
-                
             }
         }
         else
         {
-            for(size_t i = 0; i < temp->posts.size(); i++)
+            for (size_t i = 0; i < temp->posts.size(); i++)
             {
                 posts.push_back(temp->posts[i]);
             }
         }
         return posts;
     }
-
 }
 
 void CategoryTree::displayTree() const
 {
+    PreOrderIterator it(this->root);
+    while (*it)
+    {
+        std::cout << (*it)->categoryName << std::endl;
+        ++it;
+    }
 }
-
+/*Following is the query I passed to Grok for the iterators portion:
+"to implement an iterator, let me know what are the function of these. donot tell even a single line of code"
+With this query, i passed the definitions of the operator*, operator++, operator!=, operator== as well
+The response I got was extremely generic, but what it clarified was how to keep track of the current iterator.
+*/
 CategoryTree::PreOrderIterator::PreOrderIterator(shared_ptr<CategoryNode> root)
 {
+    // I had understood and memorized this code for the midterm from a youtube channel called strivers. There was two questions from this topic (inorder iterative traversal) that appeared in the exam which I blindly got right
+    std::stack<shared_ptr<CategoryNode>> st;
+    st.push(root);
+    while (!st.empty())
+    {
+        shared_ptr<CategoryNode> temp = st.top();
+        st.pop();
+        if (!temp->children.empty())
+        {
+            for (int i = temp->children.size() - 1; i >= 0; i--)
+            {
+                st.push(temp->children[i]);
+            }
+        }
+        this->stack.push_back(temp);
+    }
+    this->current = this->stack[0];
 }
 
 CategoryTree::PreOrderIterator::PreOrderIterator() : current(nullptr)
@@ -369,22 +395,52 @@ CategoryTree::PreOrderIterator::PreOrderIterator() : current(nullptr)
 
 shared_ptr<CategoryNode> CategoryTree::PreOrderIterator::operator*() const
 {
-    return nullptr;
+    return this->current;
 }
 
 CategoryTree::PreOrderIterator &CategoryTree::PreOrderIterator::operator++()
 {
-    CategoryTree::PreOrderIterator a;
+    for (size_t i = 0; i < this->stack.size(); i++)
+    {
+        if (this->stack[i]->categoryName == this->current->categoryName)
+        {
+            if (i != this->stack.size() - 1)
+            {
+                this->current = this->stack[i + 1];
+                return *this;
+            }
+            else
+            {
+                this->current = nullptr;
+                return *this;
+            }
+        }
+    }
+    return *this;
 }
 
 bool CategoryTree::PreOrderIterator::operator!=(const PreOrderIterator &other) const
 {
-    return false;
+    if (this->current == other.current)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
 }
 
 bool CategoryTree::PreOrderIterator::operator==(const PreOrderIterator &other) const
 {
-    return false;
+    if (this->current == other.current)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 CategoryTree::PostOrderIterator::PostOrderIterator(shared_ptr<CategoryNode> root)
@@ -450,14 +506,14 @@ bool CategoryTree::BreadthFirstIterator::operator==(const BreadthFirstIterator &
 
 CategoryTree::PreOrderIterator CategoryTree::preOrderBegin() const
 {
-    CategoryTree::PreOrderIterator a;
-    return a;
+    PreOrderIterator it(this->root);
+    return it;
 }
 
 CategoryTree::PreOrderIterator CategoryTree::preOrderEnd() const
 {
-    CategoryTree::PreOrderIterator a;
-    return a;
+    PreOrderIterator it;
+    return it;
 }
 
 CategoryTree::PostOrderIterator CategoryTree::postOrderBegin() const
