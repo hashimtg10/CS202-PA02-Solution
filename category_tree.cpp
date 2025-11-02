@@ -356,7 +356,7 @@ vector<Post *> CategoryTree::getPostsInCategory(const string &categoryPath, bool
 
 void CategoryTree::displayTree() const
 {
-    PreOrderIterator it(this->root);
+    PostOrderIterator it(this->root);
     while (*it)
     {
         std::cout << (*it)->categoryName << std::endl;
@@ -386,7 +386,14 @@ CategoryTree::PreOrderIterator::PreOrderIterator(shared_ptr<CategoryNode> root)
         }
         this->stack.push_back(temp);
     }
-    this->current = this->stack[0];
+    if (this->stack.size() >= 1)
+    {
+        this->current = this->stack[0];
+    }
+    else
+    {
+        this->current = nullptr;
+    }
 }
 
 CategoryTree::PreOrderIterator::PreOrderIterator() : current(nullptr)
@@ -404,7 +411,7 @@ CategoryTree::PreOrderIterator &CategoryTree::PreOrderIterator::operator++()
     {
         if (this->stack[i]->categoryName == this->current->categoryName)
         {
-            if (i != this->stack.size() - 1)
+            if (i < this->stack.size() - 1)
             {
                 this->current = this->stack[i + 1];
                 return *this;
@@ -446,6 +453,38 @@ bool CategoryTree::PreOrderIterator::operator==(const PreOrderIterator &other) c
 CategoryTree::PostOrderIterator::PostOrderIterator(shared_ptr<CategoryNode> root)
     : current(nullptr), lastVisited(nullptr)
 {
+    // I had understood and memorized this code for the midterm from a youtube channel called strivers. There was two questions from this topic (inorder iterative traversal) that appeared in the exam which I blindly got right
+    std::stack<shared_ptr<CategoryNode>> st1;
+    std::stack<shared_ptr<CategoryNode>> st2;
+    st1.push(root);
+    while (!st1.empty())
+    {
+        shared_ptr<CategoryNode> temp = st1.top();
+        st1.pop();
+        if (!temp->children.empty())
+        {
+            for (size_t i = 0; i < temp->children.size(); i++)
+            {
+                st1.push(temp->children[i]);
+            }
+        }
+        st2.push(temp);
+    }
+    while (!st2.empty())
+    {
+        this->stack.push_back(st2.top());
+        st2.pop();
+    }
+    if (this->stack.size() >= 1)
+    {
+        this->current = this->stack[0];
+        this->lastVisited = nullptr;
+    }
+    else
+    {
+        this->current = nullptr;
+        this->lastVisited = nullptr;
+    }
 }
 
 CategoryTree::PostOrderIterator::PostOrderIterator()
@@ -455,28 +494,83 @@ CategoryTree::PostOrderIterator::PostOrderIterator()
 
 shared_ptr<CategoryNode> CategoryTree::PostOrderIterator::operator*() const
 {
-    return nullptr;
+    return this->current;
 }
 
 CategoryTree::PostOrderIterator &CategoryTree::PostOrderIterator::operator++()
 {
-    CategoryTree::PostOrderIterator a;
-    return a;
+    if (this->current == nullptr)
+    {
+        return *this;
+    }
+    for (size_t i = 0; i < this->stack.size(); i++)
+    {
+        if (this->stack[i]->categoryName == this->current->categoryName)
+        {
+            if (i < this->stack.size() - 1)
+            {
+                this->current = this->stack[i + 1];
+                this->lastVisited = this->stack[i];
+                return *this;
+            }
+            else
+            {
+                this->current = nullptr;
+                this->lastVisited = this->stack[i];
+                return *this;
+            }
+        }
+    }
+    return *this;
 }
 
 bool CategoryTree::PostOrderIterator::operator!=(const PostOrderIterator &other) const
 {
-    return false;
+    if (this->current == other.current)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
 }
 
 bool CategoryTree::PostOrderIterator::operator==(const PostOrderIterator &other) const
 {
-    return false;
+    if (this->current == other.current)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 CategoryTree::BreadthFirstIterator::BreadthFirstIterator(shared_ptr<CategoryNode> root)
     : currentIndex(0)
 {
+    std::queue<shared_ptr<CategoryNode>> q;
+    q.push(root);
+    while (!q.empty())
+    {
+        int len = q.size();
+        for (int i = 0; i < len; i++)
+        {
+            shared_ptr<CategoryNode> temp = q.front();
+            q.pop();
+            if(!temp->children.empty())
+            {
+                for (size_t i = 0; i < temp->children.size(); i++)
+                {
+                    q.push(temp->children[i]);
+                }
+                
+            }
+            this->queue.push_back(temp);
+        }
+    }
 }
 
 CategoryTree::BreadthFirstIterator::BreadthFirstIterator() : currentIndex(SIZE_MAX)
@@ -485,28 +579,62 @@ CategoryTree::BreadthFirstIterator::BreadthFirstIterator() : currentIndex(SIZE_M
 
 shared_ptr<CategoryNode> CategoryTree::BreadthFirstIterator::operator*() const
 {
-    return nullptr;
+    if (this->currentIndex >= 0 && this->currentIndex < this->queue.size())
+    {
+        return this->queue[this->currentIndex];
+    }
+    else
+    {
+        return nullptr;
+    }
 }
 
 CategoryTree::BreadthFirstIterator &CategoryTree::BreadthFirstIterator::operator++()
 {
-    CategoryTree::BreadthFirstIterator a;
-    return a;
+    if (this->currentIndex < 0 || this->currentIndex >= this->queue.size())
+    {
+        return *this;
+    }
+    else if (this->currentIndex < this->queue.size() - 1)
+    {
+        this->currentIndex++;
+        return *this;
+    }
+    else
+    {
+        this->currentIndex = -1;
+        return *this;
+    }
 }
 
 bool CategoryTree::BreadthFirstIterator::operator!=(const BreadthFirstIterator &other) const
 {
-    return false;
+    if (this->currentIndex == other.currentIndex)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
 }
 
 bool CategoryTree::BreadthFirstIterator::operator==(const BreadthFirstIterator &other) const
 {
-    return false;
+    if (this->currentIndex == other.currentIndex)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 CategoryTree::PreOrderIterator CategoryTree::preOrderBegin() const
 {
     PreOrderIterator it(this->root);
+    this->displayTree();
     return it;
 }
 
@@ -518,24 +646,25 @@ CategoryTree::PreOrderIterator CategoryTree::preOrderEnd() const
 
 CategoryTree::PostOrderIterator CategoryTree::postOrderBegin() const
 {
-    CategoryTree::PostOrderIterator a;
-    return a;
+    PostOrderIterator it(this->root);
+    this->displayTree();
+    return it;
 }
 
 CategoryTree::PostOrderIterator CategoryTree::postOrderEnd() const
 {
-    CategoryTree::PostOrderIterator a;
-    return a;
+    PostOrderIterator it;
+    return it;
 }
 
 CategoryTree::BreadthFirstIterator CategoryTree::breadthFirstBegin() const
 {
-    CategoryTree::BreadthFirstIterator a;
-    return a;
+    BreadthFirstIterator it(this->root);
+    return it;
 }
 
 CategoryTree::BreadthFirstIterator CategoryTree::breadthFirstEnd() const
 {
-    CategoryTree::BreadthFirstIterator a;
-    return a;
+    BreadthFirstIterator it;
+    return it;
 }
