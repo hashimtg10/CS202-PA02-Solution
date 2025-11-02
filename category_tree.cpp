@@ -179,22 +179,32 @@ bool CategoryTree::moveCategory(const string &fromPath, const string &toPath)
 {
     vector<string> from_categories = this->parseCategoryPath(fromPath);
     vector<string> to_categories = this->parseCategoryPath(toPath);
-    if (from_categories.size() <= 0 || to_categories.size() <= 0)
+    shared_ptr<CategoryNode> from = nullptr;
+    if (from_categories.size() <= 0)
     {
         return false;
     }
-    shared_ptr<CategoryNode> from = this->findCategory(fromPath);
+    else
+    {
+        from = this->findCategory(fromPath);
+    }
     if (from)
     {
-        shared_ptr<CategoryNode> to = this->findCategory(toPath);
+        shared_ptr<CategoryNode> to  = nullptr;
+        if(to_categories.size() <= 0)
+        {
+            to = this->root;
+        }
+        else
+        {
+            to = this->findCategory(toPath);
+        }
         if (!to)
         {
             this->addCategory(toPath);
             to = this->findCategory(toPath);
         }
-
         weak_ptr<CategoryNode> updater = from->parent.lock();
-
         if (this->removeCategory(fromPath))
         {
             to->children.push_back(from);
@@ -634,7 +644,6 @@ bool CategoryTree::BreadthFirstIterator::operator==(const BreadthFirstIterator &
 CategoryTree::PreOrderIterator CategoryTree::preOrderBegin() const
 {
     PreOrderIterator it(this->root);
-    this->displayTree();
     return it;
 }
 
@@ -647,7 +656,6 @@ CategoryTree::PreOrderIterator CategoryTree::preOrderEnd() const
 CategoryTree::PostOrderIterator CategoryTree::postOrderBegin() const
 {
     PostOrderIterator it(this->root);
-    this->displayTree();
     return it;
 }
 
