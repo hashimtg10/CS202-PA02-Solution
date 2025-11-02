@@ -175,13 +175,7 @@ std::vector<User *> UserSearchEngine::fuzzyUsernameSearch(const string &username
     {
       res.push_back(i.second);
     }
-  }
-  std::cout << std::endl;
-  for (auto i : res)
-  {
-    std::cout << "ID: " << i->userID << ", UserName: " << i->userName << " - ";
-  }
-  std::cout << std::endl;
+  } 
   return res;
 }
 /* Gave grok the following query: "can you please elaborate in words only", and pasted the description of the function in the manual.pdf
@@ -189,9 +183,12 @@ std::vector<User *> UserSearchEngine::fuzzyUsernameSearch(const string &username
 int UserSearchEngine::calculateEditDistance(const string &str1, const string &str2) const
 {
   int dist = editDistanceHelper(str1, str2, 0, 0);
-  std::cout << "Distance: " << dist << std::endl;
   return dist;
 }
+/*For this function, I only had half an hour to submit, and I was getting full marks in the test case (have that version saved on git and github), but new it is missing on an edge case. Therefore, this was the first time as far as I can recall that I exchanged code with an LLM to get debugged. The only problem was that I was out of time; I forwarded the issue to TA's as well but was not expecting a response that late.
+*/
+/*Following is the query I gave to grok and ChatGpt: can you just give me a minor hint  of where is the problem in this function i have written*/
+/*Sadly, the issue remained, yet the test cases passed*/
 size_t UserSearchEngine::editDistanceHelper(const string &str1, const string &str2, size_t i1, size_t i2) const
 {
   if (i1 >= str1.length() && i2 >= str2.length())
@@ -206,14 +203,12 @@ size_t UserSearchEngine::editDistanceHelper(const string &str1, const string &st
   {
     return str1.length() - (i1);
   }
-  int way1 = 0;
-  int way2 = 0;
-  int way3 = 0;
+  size_t way1 = 0;
+  size_t way2 = 0;
+  size_t way3 = 0;
   if (str1[i1] == str2[i2])
   {
-    way1 = editDistanceHelper(str1, str2, i1+1, i2+1);
-    way2 = editDistanceHelper(str1, str2, i1+1, i2+1);
-    way3 = editDistanceHelper(str1, str2, i1+1, i2+1);
+    return editDistanceHelper(str1, str2, i1+1, i2+1);
   }
   else
   {
